@@ -1,0 +1,43 @@
+name: Test Signal Engine
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install python-dotenv
+    
+    - name: Run Signal Engine Test (Mock Data)
+      run: |
+        echo "=========================================="
+        echo "🧪 Testing Signal Engine with Mock Data"
+        echo "=========================================="
+        python test_signal_comprehensive.py
+    
+    - name: Test Summary
+      if: always()
+      run: |
+        echo ""
+        echo "✅ All tests completed!"
+        echo "Python version: ${{ matrix.python-version }}"
