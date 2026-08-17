@@ -40,22 +40,34 @@ class SignalEngine:
         )
 
         if not raw:
-            return None
+            print(f"ERROR: No candles returned for {asset}")
+            return {"direction": 0, "confidence": 0, "reason": "No candle data"}
 
         candles = []
 
         for c in raw:
-            candles.append(
-                Candle(
-                    open=float(c["open"]),
-                    high=float(c["high"]),
-                    low=float(c["low"]),
-                    close=float(c["close"]),
-                    volume=float(c.get("volume", 0)),
-                    timestamp=c["time"],
+            try:
+                candles.append(
+                    Candle(
+                        open=float(c["open"]),
+                        high=float(c["high"]),
+                        low=float(c["low"]),
+                        close=float(c["close"]),
+                        volume=float(c.get("volume", 0)),
+                        timestamp=c["time"],
+                    )
                 )
-            )
+            except (KeyError, TypeError, ValueError) as e:
+                print(f"ERROR parsing candle: {c} - {e}")
+                continue
 
-        result = self.aggregator.aggregate(candles)
+        if len(candles) < 20:
+            print(f"WARNING: Only {len(candles)} candles available (need ≥20)")
+            return {"direction": 0, "confidence": 0, "reason": f"Insufficient data: {len(candles)} candles"}
 
-        return result
+        try:
+            result = self.aggregator.aggregate(candles)
+            return result
+        except Exception as e:
+            print(f"ERROR in aggregator: {e}")
+            return {"direction": 0, "confidence": 0, "reason": f"Aggregation error: {str(e)}"}
